@@ -1,0 +1,73 @@
+module bcd_adder_8bit(
+    input logic [7:0] A,
+    input logic[7:0] B,  
+    input logic Cin,      
+    output logic [7:0] S, 
+    output logic Cout     
+);
+    logic [3:0] sum0, sum1;  
+    logic c0, c1;            
+
+    bcd_digit_adder u0 (
+        .A(A[3:0]),
+        .B(B[3:0]),
+        .Cin(Cin),
+        .S(sum0),
+        .Cout(c0)
+    );
+
+    bcd_digit_adder u1 (
+        .A(A[7:4]),
+        .B(B[7:4]),
+        .Cin(c0),
+        .S(sum1),
+        .Cout(c1)
+    );
+
+    assign S = {sum1, sum0};
+    assign Cout = c1;
+
+endmodule
+
+module bcd_digit_adder (
+    input [3:0] A,  
+    input [3:0] B,  
+    input Cin,      
+    output [3:0] S, 
+    output Cout     
+);
+    logic [4:0] raw_sum; 
+    logic correction;     
+    logic [4:0] corrected_sum;
+    assign raw_sum = A + B + Cin;
+    assign correction = (raw_sum > 9);
+    assign corrected_sum = correction ? (raw_sum + 6) : raw_sum;
+
+    assign S = corrected_sum[3:0];
+    assign Cout = correction || corrected_sum[4];
+endmodule
+
+TB:
+module bcd_adder_8bit_tb;
+   reg [7:0] A, B;
+   reg Cin;
+   wire [7:0] S;
+   wire Cout;
+bcd_adder_8bit DUT (A,B,Cin,S,Cout);
+    initial
+    begin
+        A = 8'b00001001; B = 8'b00000111; Cin = 0; #10;
+        $display("A=%b, B=%b, Cin=%b | S=%b, Cout=%b", A, B, Cin, S, Cout);
+
+        A = 8'b00100100; B = 8'b00011000; Cin = 0; #10;
+        $display("A=%b, B=%b, Cin=%b | S=%b, Cout=%b", A, B, Cin, S, Cout);
+
+        A = 8'b10011001; B = 8'b00000001; Cin = 0; #10;
+        $display("A=%b, B=%b, Cin=%b | S=%b, Cout=%b", A, B, Cin, S, Cout);
+
+        A = 8'b01010000; B = 8'b01010000; Cin = 1; #10;
+        $display("A=%b, B=%b, Cin=%b | S=%b, Cout=%b", A, B, Cin, S, Cout);
+
+        $finish;
+    end
+endmodule
